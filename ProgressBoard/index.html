@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="hARAJhtvBIh9Q393F9J5uZ">
+<head data-page-node-id="YSMY5AdJQSblvLHZEt90DT">
+<meta charset="UTF-8" data-page-node-id="fN7uox3ZIMux78SFGB6upd">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="8M8qx7ZmJcMXLBl4tuvHnn">
+<title>ProgressBoard</title>
+<link rel="stylesheet" href="style.css" data-page-node-id="8YCxrxZSIZgLs1cJkEELUO">
+</head>
+<body data-page-node-id="NNjinCAel0tI041O4xsJO6">
+<div class="page" data-page-node-id="ce1kJEfChzQQHhdoT1UX6g">
+
+  <header class="top" data-page-node-id="4kIBxlQCdvaOzhpzqG5DK5">
+    <div data-page-node-id="20cNR4i5aXzqQYcN0JxGEg">
+      <h1 data-i18n="app.title" data-page-node-id="OXpF88vSYAGi83piaRaH6i">项目进度看板</h1>
+      <div class="sub" data-i18n="app.sub" data-page-node-id="GNuOBbrEWXW9sjOxUQxEoB">周报式项目管理：按学年整理各项进度，表格自动排序，数据保存在本地。</div>
+    </div>
+    <div class="actions" data-page-node-id="LYXQW6bKxFzD65BEuJ6May">
+      <button class="primary" onclick="addRow()" data-i18n="btn.add" data-page-node-id="Ev9p3QzQ9LmzBZcXlIn3KH">＋ 添加记录</button>
+      <button id="btnUndo" onclick="undoStep()" disabled data-i18n-title="btn.undoTip" data-i18n="btn.undo" data-page-node-id="BTPU44xyUp2jO4igBYrLJS">↶ 回退上一步</button>
+      <button onclick="exportExcel()" data-i18n-title="btn.exportTip" data-i18n="btn.export" data-page-node-id="7cTvw8XGQD6eg9RcbEJm7a">导出 Excel</button>
+      <button onclick="document.getElementById('fileImport').click()" data-i18n-title="btn.importTip" data-i18n="btn.import" data-page-node-id="cIn8iHJ4do5bEoOW8vf0t2">导入表格</button>
+      <input type="file" id="fileImport" accept=".csv,.tsv,.txt,.xls,.xlsx" style="display:none" onchange="importTable(event)" data-page-node-id="w6ZMtDx1GoFhJoPwTnOEgV">
+      <button onclick="dedupeManual()" data-i18n="btn.dedupe" data-page-node-id="Ypr3ZsRLDFCgNbkxFVwjhT">查重清理</button>
+      <button id="btnLog" onclick="openLog()" data-i18n="btn.log" data-page-node-id="iGwP9fRweSXRGe83tCqjwk">保存记录</button>
+      <button onclick="chooseDataFile()" data-i18n-title="btn.dataTip" data-i18n="btn.data" data-page-node-id="X9bJUdjX7uEpAy02D79lsu">数据文件</button>
+      <button id="btnLang" onclick="toggleLang()" data-page-node-id="lj7UKIC8NzD7tzUEb0qrVU">EN</button>
+      <button class="danger" onclick="clearAll()" data-i18n="btn.clear" data-page-node-id="TSRhzZfGSLsaxxKadbjIIb">清空数据</button>
+    </div>
+  </header>
+
+  <div class="toolbar" data-page-node-id="VivI9SdGHdindFrJoactNY">
+    <label data-i18n="toolbar.year" data-page-node-id="6XXu4qXJacIrR1WCsiB8Z7">学年</label>
+    <select id="fYear" onchange="render()" data-page-node-id="FEypCJOtGVjUwjWkRLiEIX">
+      <option value="" data-i18n="toolbar.all" data-page-node-id="gGljq0lTcZ9FsuO5qXaXDW">全部</option>
+    </select>
+    <label data-i18n="toolbar.status" data-page-node-id="971ZHcjwM5CetVBxmcQRsW">状态</label>
+    <select id="fStatus" onchange="render()" data-page-node-id="yF1lzUyUEMmQls2BBHXok6">
+      <option value="" data-i18n="toolbar.all" data-page-node-id="h4LrBonjvgXHFcjw67nkfF">全部</option>
+    </select>
+    <label data-i18n="toolbar.project" data-page-node-id="ibgdyGzNV3OruK4LHxC4Jt">项目</label>
+    <select id="fProject" onchange="render()" data-page-node-id="LcX55FbgHkAWcMG0s2fzu9"><option value="" data-i18n="toolbar.all" data-page-node-id="AoJvB8EdSHuvAIdI2AaMzn">全部</option></select>
+    <label data-i18n="toolbar.kw" data-page-node-id="rlHlD9xzMPE5uKAiIUTSGr">关键词</label>
+    <input type="search" id="fKw" data-i18n-ph="toolbar.kwPh" oninput="render()" style="width:190px" data-page-node-id="2WDycvyHBrSHekw5m0EsFu">
+    <span class="grow" data-page-node-id="4jafwQwmzMW7i0EeX75Dti"></span>
+    <span class="hint" data-i18n="toolbar.hint" data-page-node-id="zwe3eKU2aKGimSEWi2kkeA">表格按学年（低→高）和完成度（100→0）自动排序；误操作可点「回退上一步」。状态颜色：绿＝已完成/已结项，蓝＝推进中/待启动，灰＝已暂停</span>
+  </div>
+
+  <div class="cards" data-page-node-id="ZMlkkb8fazAMFHh0eaVDQT">
+    <div class="card" data-page-node-id="7B5kaZsDsaCHR7GLkIfFTo"><div class="lab" data-i18n="card.total" data-page-node-id="IMf8SLuve0Th5VVdQwhMba">记录总数</div><div class="num" id="kTotal" data-page-node-id="ayAr1OAGKB9zZ5VVDVHVxC">0</div><div class="sub" id="kTotalExtra" data-page-node-id="b9nAJMlBA78BEBDQOhlIDv"></div></div>
+    <div class="card" data-page-node-id="Uxpj3wWtuDhXEEvUSYpPIT"><div class="lab" data-i18n="card.projects" data-page-node-id="UB4zn8KrSgaCKGi8mX0BnL">项目数</div><div class="num" id="kProj" data-page-node-id="jceK8a87YRqwKDstMiC33f">0</div><div class="sub" data-i18n="card.projectsSub" data-page-node-id="mtZk780hUmX0LN2DJHnFnx">按项目名去重</div></div>
+    <div class="card" data-page-node-id="12L6yadIPlPPZRtSROjoEW"><div class="lab" data-i18n="card.active" data-page-node-id="sIjMyH7M3BRmMXJdazAgmB">进行中项目</div><div class="num" id="kActive" data-page-node-id="BFu1nBl95qKxwMRY1y7kY9">0</div><div class="sub" data-i18n="card.activeSub" data-page-node-id="ujxq2kfuslXzbcAZTd3n2s">推进中 / 待启动 / 已暂停</div></div>
+    <div class="card" data-page-node-id="Vz0fwcqcB8a0EIfPT1H7Kt"><div class="lab" data-i18n="card.done" data-page-node-id="1ElkfUXgxwCpNdshA2rSLP">已完成项目</div><div class="num" id="kDone" data-page-node-id="2o2aLvSDHlCbZt3IgZg5Gs">0</div><div class="sub" data-i18n="card.doneSub" data-page-node-id="FJMbCYwGrZJMHShhnf5Nf5">已完成 / 已结项</div></div>
+    <div class="card" data-page-node-id="COyhNjXrOlIsGp5kHYhbzl"><div class="lab" data-i18n="card.avg" data-page-node-id="En7KwjKpbl64UhmyBjgWBz">整体完成度</div><div class="num" id="kAvg" data-page-node-id="PEuNiBfvxI2T3P72bGPrBj">0%</div><div class="sub" id="kAvgSub" data-page-node-id="hqduTmhPpvVd6fyp1sWD0q"></div></div>
+  </div>
+
+  <aside class="panel" data-page-node-id="8UgjPAyJHjpfnqI23GQNwm">
+    <div class="charts" data-page-node-id="bXJUZ7DlYXmP9pE5nibvxf">
+      <div class="chartbox" data-page-node-id="lv6d9Q3RkLXrGYEHIBJBRo"><h3 data-i18n="chart.bars" data-page-node-id="Se0ZeGXyTBaUeLrhlT8hgG">项目整体完成度</h3><div id="cBars" data-page-node-id="OC7MX93KZd55xbH0jhuFNA"></div></div>
+      <div class="chartbox" data-page-node-id="kM3x1T0SksqnAqKyHxCTRo"><h3 data-i18n="chart.donut" data-page-node-id="szS1FojDeE4BJWJS8XZWzI">状态分布</h3><div id="cDonut" data-page-node-id="hbtrTBxeB5vTcXGQxwe3PC"></div></div>
+      <div class="chartbox" data-page-node-id="W0ZDrDrrqPlGwhlzmYiTif"><h3 data-i18n="chart.line" data-page-node-id="RBIxR1lKYul7emkDqq06TE">整体完成度趋势</h3><div id="cLine" data-page-node-id="YNAHoV8lEweFD2EkL34i2v"></div></div>
+    </div>
+  </aside>
+
+  <div class="tablewrap" data-page-node-id="JwSByrbqjL5z91PT0gs7zu">
+    <table data-page-node-id="0enVTOSeHEJ4xBvVZwQwof">
+      <colgroup data-page-node-id="OsBTASuphoOcYvcO3fr71D">
+        <col style="width:100px" data-page-node-id="Z8GL8D8VOmg0uyL7KgSapg"><col style="width:122px" data-page-node-id="uRHwyCAbllxS677DyLpVjy"><col style="width:188px" data-page-node-id="U8EasyLz5mFooTZHd805jW"><col style="width:92px" data-page-node-id="dXy2CyoVajZDuOn3Lvw6Lt">
+        <col style="width:110px" data-page-node-id="xCVb0AePfsyjkIcGM0H4Sb"><col style="width:130px" data-page-node-id="NIgtJnQPKvIAIZsMu1CX0f"><col style="width:100px" data-page-node-id="QwHcNGYGEZAKD3jcVr4QYd"><col style="width:100px" data-page-node-id="3iBY75QlYe0jpW7uX12hVX">
+        <col style="width:232px" data-page-node-id="NPCe6zsyn4hXhIOCZCHOkh"><col style="width:188px" data-page-node-id="2CPWyEkseB9CUndDEwhi8X"><col style="width:92px" data-page-node-id="2gDrHgVK0aoSgXLs4IHaPe">
+      </colgroup>
+      <thead data-page-node-id="xg11UWD3zpARuvgDQLzp4m">
+        <tr data-page-node-id="WX7eBbtjBOWYr6qJHXxuxX">
+          <th data-i18n="col.year" data-page-node-id="QAnmTUtzMrCEEtXjF30UFe">学年</th>
+          <th data-i18n="col.date" data-page-node-id="nvHgvoz1EPREOxAilmkvPe">日期</th>
+          <th data-i18n="col.project" data-page-node-id="3EMXrQXjn7QWjPKYggg49S">项目名称</th>
+          <th data-i18n="col.owner" data-page-node-id="40lBoVnimnXbaDzwAN09ck">负责人</th>
+          <th data-i18n="col.type" data-page-node-id="Ur8s3KWreS97Mu71pgITfm">项目类型</th>
+          <th data-i18n="col.comp" data-page-node-id="bUOtHFMHCNGGQEjpi345ni">完成度</th>
+          <th data-i18n-title="col.statusTip" data-i18n="col.status" data-page-node-id="FAWRoxNiOS4mXLlmwOCozR">状态</th>
+          <th data-i18n="col.plan" data-page-node-id="9WuTnr9PILNkAEPn9i4po6">计划书</th>
+          <th data-i18n="col.work" data-page-node-id="BkGudXAKkVR61PEtP8FE7E">本周进展（完成内容）</th>
+          <th data-i18n="col.note" data-page-node-id="SxY6XCpQdnS74CiRhSlpOE">备注 / 风险 / 下周计划</th>
+          <th data-i18n="col.op" data-page-node-id="s6MJaeETdvekc6fndOLy3Q">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody" data-page-node-id="mO4bnDACSH9cip77pSgCdl"></tbody>
+    </table>
+  </div>
+
+  <footer data-page-node-id="56MEphYek7CMW5inTRygLO">
+    <span data-i18n="footer.text" data-page-node-id="QHapc7g6qwhrP2FgOMrkeD">数据自动保存在本地，每一步修改都可点「回退上一步」撤销。导出为 Excel 文件（.xls）；导入支持 CSV / TXT / XLS / XLSX 表格。</span>
+    <span class="datafile-status" id="dataFileStatus" data-page-node-id="j8aXVNGuoy66T2xmWzuOIb"></span>
+    <span data-page-node-id="xmpvfFHNDeDhhUHPcaPKWu"> · ProgressBoard v1.0.1</span>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   ProgressBoard - a single-folder weekly project tracker
+   ============================================================ */
+
+/* ---------------- i18n ---------------- */
+var I18N = {
+  zh: {
+    app: { title: "项目进度看板", sub: "周报式项目管理：按学年整理各项进度，表格自动排序，数据保存在本地。" },
+    btn: {
+      add: "＋ 添加记录", undo: "↶ 回退上一步", undoTip: "撤销最近一次修改",
+      export: "导出 Excel", exportTip: "导出为 Excel 文件（.xls），可用 Excel / WPS 打开",
+      import: "导入表格", importTip: "支持 CSV / TXT / XLS / XLSX 表格文件",
+      dedupe: "查重清理", log: "保存记录", data: "数据文件",
+      dataTip: "选择或重新授权本地数据文件（data.json），实现文件夹内自动保存",
+      clear: "清空数据"
+    },
+    toolbar: {
+      year: "学年", status: "状态", project: "项目", kw: "关键词", all: "全部",
+      kwPh: "搜索项目 / 负责人 / 进展 / 备注",
+      hint: "表格按学年（低→高）和完成度（100→0）自动排序；误操作可点「回退上一步」。状态颜色：绿＝已完成/已结项，蓝＝推进中/待启动，灰＝已暂停"
+    },
+    card: {
+      total: "记录总数", totalExtra: "全部记录条数", totalFiltered: "当前筛选下的记录数",
+      projects: "项目数", projectsSub: "按项目名去重",
+      active: "进行中项目", activeSub: "推进中 / 待启动 / 已暂停",
+      done: "已完成项目", doneSub: "已完成 / 已结项",
+      avg: "整体完成度", avgSub: "取各项目最新进度平均值", avgCount: "（共 {n} 个项目）"
+    },
+    chart: { bars: "项目整体完成度", donut: "状态分布", line: "整体完成度趋势", noData: "暂无数据" },
+    col: {
+      year: "学年", date: "日期", project: "项目名称", owner: "负责人", type: "项目类型",
+      comp: "完成度", status: "状态", statusTip: "颜色规则：绿色=已完成/已结项，蓝色=推进中/待启动，灰色=已暂停",
+      plan: "计划书", work: "本周进展（完成内容）", note: "备注 / 风险 / 下周计划", op: "操作"
+    },
+    status: { in_progress: "推进中", completed: "已完成", closed: "已结项", paused: "已暂停", pending: "待启动" },
+    year: { year1: "大一", year2: "大二", year3: "大三", year4: "大四", other: "其他" },
+    type: { innovation: "大创项目", coursework: "课程作业", competition: "竞赛赛事", student_work: "学生工作", personal: "个人开发", other: "其他" },
+    plan: { not_started: "未开始", drafting: "撰写中", done: "已完成", not_needed: "无需计划书" },
+    planShort: { not_needed: "无需" },
+    misc: {
+      emptyRow: "暂无记录。点击右上角「＋ 添加记录」开始录入，或点「导入表格」从 CSV / Excel 文件导入。",
+      cross: "跨学年", crossTip: "勾选后该项目同时显示在两个学年", y2: "第二个学年",
+      pin: "置顶", unpin: "取消", pinTip: "置顶：在当前筛选下始终排最前", unpinTip: "取消置顶",
+      del: "删除该记录", plus5: "完成度加 5", minus5: "完成度减 5",
+      projPh: "项目名称", ownerPh: "负责人", workPh: "本周完成内容", notePh: "备注 / 风险 / 下周计划"
+    },
+    msg: {
+      noUndo: "没有可回退的操作了。",
+      delConfirm: "确定删除该条记录吗？可点「回退上一步」撤销。",
+      clearConfirm: "确定清空全部数据吗？清空后可点「回退上一步」撤销，建议先导出 Excel 备份。",
+      dedupeEmpty: "当前没有记录，无需清理。",
+      dedupeNone: "未发现重复项目，每个项目名都是唯一的。",
+      dedupeConfirm: "发现 {n} 条重复项目记录，将保留每个项目日期最新的一条：\n\n{names}\n\n是否清理？可点「回退上一步」撤销。",
+      dedupeMore: "· ……等共 {n} 条",
+      importNone: "未在文件中读到有效数据：需包含「项目名称 / Project」或「日期 / Date」列，且至少一行有内容。",
+      importAsk: "读到 {n} 条记录。\n\n确定 = 覆盖当前全部数据\n取消 = 追加到现有记录后面",
+      importFail: "导入失败：{err}",
+      filteredToast: "「{p}」已保存，但不再匹配当前筛选，点此查看",
+      pinnedToast: "「{p}」已置顶，在当前筛选下排最前",
+      unpinnedToast: "「{p}」已取消置顶",
+      healedToast: "已自动修复 {n} 条记录的重复/缺失编号",
+      avgOf: "取各项目最新进度平均值"
+    },
+    log: {
+      title: "保存记录", sub: "后台数据修改日志（最近 {n} 条）", clear: "清空", close: "关闭",
+      clearConfirm: "确认清空保存记录吗？该操作不影响表格数据。",
+      empty: "还没有修改记录。表格里改任意字段后会自动出现在这里，可随时打开核验数据是否已写入。",
+      sys: "系统操作",
+      field: {
+        comp: "完成度", status: "状态", year: "学年", year2: "第二学年", cross: "跨学年",
+        date: "日期", project: "项目名", owner: "负责人", type: "类型", plan: "计划书",
+        work: "本周进展", note: "备注", pin: "置顶"
+      },
+      sysAction: {
+        addRow: "新增记录", delRow: "删除记录", clearAll: "清空数据", undoStep: "回退上一步",
+        importReplace: "导入覆盖", importAppend: "导入追加", dedupe: "查重清理"
+      },
+      pinOn: "已置顶", pinOff: "未置顶", crossOn: "已勾选", crossOff: "未勾选",
+      unnamed: "未命名", hadRows: "原有 {n} 条", rowsCount: "{n} 条记录"
+    },
+    data: {
+      linked: "数据文件：已连接 {name}", unlinked: "数据文件：未设置（数据暂存浏览器）",
+      needRelink: "数据文件需要重新授权，点「数据文件」继续",
+      saved: "已保存到本地数据文件",
+      cancelled: "已取消选择，数据仍保存在浏览器本地存储中。",
+      noFS: "当前浏览器不支持本地文件读写（建议使用 Chrome / Edge），数据已自动保存在浏览器本地存储。",
+      pickFail: "读写数据文件失败，数据仍保存在浏览器本地存储中。"
+    },
+    footer: { text: "数据自动保存在本地，每一步修改都可点「回退上一步」撤销。导出为 Excel 文件（.xls）；导入支持 CSV / TXT / XLS / XLSX 表格。" }
+  },
+  en: {
+    app: { title: "ProgressBoard", sub: "Weekly-style project tracking: organize progress by school year, auto-sorted table, data saved locally." },
+    btn: {
+      add: "＋ Add Record", undo: "↶ Undo", undoTip: "Undo the last change",
+      export: "Export Excel", exportTip: "Export as an Excel (.xls) file, opens in Excel / WPS",
+      import: "Import Table", importTip: "Supports CSV / TXT / XLS / XLSX files",
+      dedupe: "Dedupe", log: "Save Log", data: "Data File",
+      dataTip: "Choose or re-authorize the local data file (data.json) for in-folder auto saving",
+      clear: "Clear All"
+    },
+    toolbar: {
+      year: "Year", status: "Status", project: "Project", kw: "Keyword", all: "All",
+      kwPh: "Search project / owner / progress / notes",
+      hint: "Sorted by year (asc) then completion (100 to 0); mistakes can be undone. Colors: green = done/closed, blue = in progress/pending, gray = paused"
+    },
+    card: {
+      total: "Records", totalExtra: "All records", totalFiltered: "Records in current filter",
+      projects: "Projects", projectsSub: "Unique by project name",
+      active: "Active", activeSub: "In progress / Pending / Paused",
+      done: "Completed", doneSub: "Completed / Closed",
+      avg: "Avg. Completion", avgSub: "Average of latest progress per project", avgCount: "({n} projects)"
+    },
+    chart: { bars: "Project Completion", donut: "Status Distribution", line: "Completion Trend", noData: "No data yet" },
+    col: {
+      year: "Year", date: "Date", project: "Project", owner: "Owner", type: "Type",
+      comp: "Completion", status: "Status", statusTip: "Color rule: green = completed/closed, blue = in progress/pending, gray = paused",
+      plan: "Plan", work: "Progress (this period)", note: "Notes / Risks / Next", op: "Actions"
+    },
+    status: { in_progress: "In Progress", completed: "Completed", closed: "Closed", paused: "Paused", pending: "Pending" },
+    year: { year1: "Year 1", year2: "Year 2", year3: "Year 3", year4: "Year 4", other: "Other" },
+    type: { innovation: "Innovation Project", coursework: "Coursework", competition: "Competition", student_work: "Student Work", personal: "Personal Project", other: "Other" },
+    plan: { not_started: "Not Started", drafting: "Drafting", done: "Completed", not_needed: "Not Needed" },
+    planShort: { not_needed: "N/A" },
+    misc: {
+      emptyRow: "No records yet. Click \u201c＋ Add Record\u201d to start, or import from a CSV / Excel file.",
+      cross: "Cross-year", crossTip: "Show this project in two school years", y2: "Second year",
+      pin: "Pin", unpin: "Unpin", pinTip: "Pin to the top of the current filter", unpinTip: "Unpin this row",
+      del: "Delete this record", plus5: "Completion +5", minus5: "Completion -5",
+      projPh: "Project name", ownerPh: "Owner", workPh: "What was done", notePh: "Notes / risks / next steps"
+    },
+    msg: {
+      noUndo: "Nothing to undo.",
+      delConfirm: "Delete this record? You can undo with the Undo button.",
+      clearConfirm: "Clear ALL data? You can undo afterwards, but exporting a backup first is recommended.",
+      dedupeEmpty: "No records to clean up.",
+      dedupeNone: "No duplicates found; every project name is unique.",
+      dedupeConfirm: "Found {n} duplicate records. The newest record of each project will be kept:\n\n{names}\n\nClean up now? You can undo afterwards.",
+      dedupeMore: "\u00b7 ...and {n} more",
+      importNone: "No valid data found: the file needs a \u201cProject\u201d or \u201cDate\u201d column and at least one non-empty row.",
+      importAsk: "Read {n} records.\n\nOK = replace all current data\nCancel = append to existing records",
+      importFail: "Import failed: {err}",
+      filteredToast: "\u201c{p}\u201d saved, but no longer matches the current filter. Click to view",
+      pinnedToast: "\u201c{p}\u201d pinned to the top of the current filter",
+      unpinnedToast: "\u201c{p}\u201d unpinned",
+      healedToast: "Auto-fixed {n} records with duplicate/missing IDs",
+      avgOf: "Average of latest progress per project"
+    },
+    log: {
+      title: "Save Log", sub: "Data change log (latest {n})", clear: "Clear", close: "Close",
+      clearConfirm: "Clear the save log? Table data is not affected.",
+      empty: "No changes yet. Edits made in the table will appear here so you can verify what was saved.",
+      sys: "System",
+      field: {
+        comp: "Completion", status: "Status", year: "Year", year2: "2nd year", cross: "Cross-year",
+        date: "Date", project: "Project", owner: "Owner", type: "Type", plan: "Plan",
+        work: "Progress", note: "Notes", pin: "Pin"
+      },
+      sysAction: {
+        addRow: "Add record", delRow: "Delete record", clearAll: "Clear all", undoStep: "Undo",
+        importReplace: "Import (replace)", importAppend: "Import (append)", dedupe: "Dedupe"
+      },
+      pinOn: "Pinned", pinOff: "Unpinned", crossOn: "Checked", crossOff: "Unchecked",
+      unnamed: "Unnamed", hadRows: "{n} rows before", rowsCount: "{n} records"
+    },
+    data: {
+      linked: "Data file: {name} connected", unlinked: "Data file: not set (stored in browser)",
+      needRelink: "Data file needs re-authorization. Click \u201cData File\u201d to continue.",
+      saved: "Saved to the local data file",
+      cancelled: "Selection cancelled. Data remains in browser storage.",
+      noFS: "This browser does not support local file read/write (Chrome / Edge recommended). Data is stored in browser storage.",
+      pickFail: "Failed to access the data file. Data remains in browser storage."
+    },
+    footer: { text: "Data is saved locally and every change can be undone. Export as Excel (.xls); import CSV / TXT / XLS / XLSX." }
+  }
+};
+
+var LANG_KEY = "progressboard_lang";
+var LANG = "zh";
+try { LANG = localStorage.getItem(LANG_KEY) || "zh"; } catch (e) {}
+if (LANG !== "zh" && LANG !== "en") LANG = "zh";
+
+function T(path, params) {
+  var node = I18N[LANG], zh = I18N.zh, seg = path.split(".");
+  for (var i = 0; i < seg.length; i++) {
+    if (node && node[seg[i]] !== undefined) node = node[seg[i]]; else node = undefined;
+    if (zh && zh[seg[i]] !== undefined) zh = zh[seg[i]]; else zh = undefined;
+  }
+  var s = (node === undefined || typeof node === "object") ? (zh === undefined ? path : zh) : node;
+  if (typeof s === "object") s = path;
+  if (params) {
+    for (var k in params) s = String(s).split("{" + k + "}").join(params[k]);
+  }
+  return String(s);
+}
+function applyI18n() {
+  var els = document.querySelectorAll("[data-i18n]");
+  for (var i = 0; i < els.length; i++) els[i].textContent = T(els[i].getAttribute("data-i18n"));
+  var phs = document.querySelectorAll("[data-i18n-ph]");
+  for (var j = 0; j < phs.length; j++) phs[j].setAttribute("placeholder", T(phs[j].getAttribute("data-i18n-ph")));
+  var tts = document.querySelectorAll("[data-i18n-title]");
+  for (var k = 0; k < tts.length; k++) tts[k].setAttribute("title", T(tts[k].getAttribute("data-i18n-title")));
+  document.documentElement.lang = LANG === "en" ? "en" : "zh-CN";
+  var lb = document.getElementById("btnLang");
+  if (lb) lb.textContent = LANG === "zh" ? "EN" : "中文";
+}
+function toggleLang() {
+  LANG = LANG === "zh" ? "en" : "zh";
+  try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {}
+  applyI18n();
+  renderAll();
+}
+
+/* ---------------- constants ---------------- */
+var STORE_KEY = "progressboard_data";   // browser-storage mirror / fallback
+var STATUSES = ["in_progress", "completed", "closed", "paused", "pending"];
+var YEARS = ["year1", "year2", "year3", "year4", "other"];
+var TYPES = ["innovation", "coursework", "competition", "student_work", "personal", "other"];
+var PLANS = ["not_started", "drafting", "done", "not_needed"];
+
+/* Status colors (site-wide):
+   blue family = active (in_progress / pending),
+   green family = done (completed / closed),
+   gray = paused */
+var STATUS_COLOR = {
+  in_progress: "#2f6fb0",
+  pending: "#4a7fa8",
+  completed: "#2e8b57",
+  closed: "#1e6e42",
+  paused: "#9aa2ab"
+};
+function VS(s) { return (s && I18N[LANG].status[s]) ? I18N[LANG].status[s] : (s || ""); }
+function VY(y) { return (y && I18N[LANG].year[y]) ? I18N[LANG].year[y] : (y || ""); }
+function VT(t) { return (t && I18N[LANG].type[t]) ? I18N[LANG].type[t] : (t || ""); }
+function VP(p) { return (p && I18N[LANG].plan[p]) ? I18N[LANG].plan[p] : (p || ""); }
+
+var ROW = [];
+
+/* ---------------- demo data (generic, replace with your own) ---------------- */
+var SAMPLE = [
+  { y: "year1", d: "2025-03-15", p: "Personal Blog", o: "Alex", t: "coursework", c: 100, s: "closed", pl: "done",
+    w: "Launched with 10 posts and a tag system", n: "Plain HTML/CSS/JS, deployed on a static host" },
+  { y: "year1", d: "2025-06-20", p: "Weather Dashboard", o: "Alex", t: "coursework", c: 100, s: "closed", pl: "not_needed",
+    w: "Final demo passed, report submitted", n: "Group project, team of 3" },
+  { y: "year1", d: "2025-09-10", p: "Campus Marketplace", o: "Jordan", t: "innovation", c: 65, s: "in_progress", pl: "done",
+    cross: true, y2: "year2", w: "MVP online, payment flow in testing", n: "Cross-year project, will continue next year" },
+  { y: "year2", d: "2026-03-01", p: "Portfolio Redesign", o: "Alex", t: "personal", c: 25, s: "pending", pl: "drafting",
+    w: "Collecting design references", n: "" },
+  { y: "year2", d: "2026-04-12", p: "Volunteer Notes Archive", o: "Sam", t: "student_work", c: 40, s: "in_progress", pl: "not_needed",
+    w: "Scanned and indexed 200 pages", n: "Weekly updates to the shared drive" },
+  { y: "year2", d: "2026-05-05", p: "Algorithm Contest Prep", o: "Jordan", t: "competition", c: 10, s: "pending", pl: "not_started",
+    w: "", n: "Target: the fall contest" }
+];
+
+/* ---------------- storage: browser mirror + local data file ---------------- */
+var fileHandle = null;   // FileSystemFileHandle, kept in IndexedDB
+
+function saveMirror() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ rows: ROW })); } catch (e) {}
+}
+function save() {
+  saveMirror();
+  writeFileMaybe();
+}
+function loadStore() {
+  var raw = null;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { raw = null; }
+  if (raw) {
+    try {
+      var obj = JSON.parse(raw);
+      if (obj && Array.isArray(obj.rows)) { ROW = obj.rows; return; }
+    } catch (e) {}
+  }
+  ROW = SAMPLE.map(sampleToRow);
+  saveMirror();
+}
+function sampleToRow(s) {
+  return {
+    id: uid(), year: s.y, date: s.d, project: s.p, owner: s.o, type: s.t,
+    comp: s.c, status: s.s, plan: s.pl, work: s.w, note: s.n,
+    cross: !!s.cross, year2: s.cross ? (s.y2 || "") : ""
+  };
+}
+
+/* ----- local data file via File System Access API (Chrome / Edge) ----- */
+function idbOpen() {
+  return new Promise(function (res, rej) {
+    var req = indexedDB.open("progressboard_db", 1);
+    req.onupgradeneeded = function () { req.result.createObjectStore("handles"); };
+    req.onsuccess = function () { res(req.result); };
+    req.onerror = function () { rej(req.error); };
+  });
+}
+function idbPut(key, val) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (res, rej) {
+      var tx = db.transaction("handles", "readwrite");
+      tx.objectStore("handles").put(val, key);
+      tx.oncomplete = function () { res(); };
+      tx.onerror = function () { rej(tx.error); };
+    });
+  });
+}
+function idbGet(key) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (res, rej) {
+      var tx = db.transaction("handles", "readonly");
+      var rq = tx.objectStore("handles").get(key);
+      rq.onsuccess = function () { res(rq.result || null); };
+      rq.onerror = function () { rej(rq.error); };
+    });
+  });
+}
+function updateDataFileStatus() {
+  var el = document.getElementById("dataFileStatus");
+  if (!el) return;
+  if (fileHandle) {
+    el.textContent = T("data.linked", { name: fileHandle.name || "data.json" });
+  } else {
+    el.textContent = T("data.unlinked");
+  }
+}
+function writeFileMaybe() {
+  if (!fileHandle) return;
+  fileHandle.createWritable().then(function (w) {
+    return w.write(new Blob([JSON.stringify({ rows: ROW }, null, 2)], { type: "application/json" }))
+      .then(function () { return w.close(); });
+  }).catch(function () { /* file unavailable; browser mirror already saved */ });
+}
+function readFileInto() {
+  if (!fileHandle) return Promise.resolve(false);
+  return fileHandle.getFile().then(function (f) {
+    return f.text();
+  }).then(function (txt) {
+    try {
+      var obj = JSON.parse(txt);
+      if (obj && Array.isArray(obj.rows) && obj.rows.length) {
+        ROW = obj.rows;
+        ensureUniqueIds();
+        saveMirror();
+        renderAll();
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }).catch(function () { return false; });
+}
+/* Called once on startup: restore handle, read file if permitted */
+function initDataFile() {
+  if (!window.showSaveFilePicker || !window.indexedDB) { updateDataFileStatus(); return; }
+  idbGet("dataFile").then(function (h) {
+    if (!h) { updateDataFileStatus(); return; }
+    fileHandle = h;
+    return h.queryPermission({ mode: "readwrite" }).then(function (perm) {
+      if (perm === "granted") {
+        return readFileInto().then(function () { updateDataFileStatus(); });
+      }
+      updateDataFileStatus();
+      showToast(T("data.needRelink"));
+    });
+  }).catch(function () { updateDataFileStatus(); });
+}
+/* Button handler: pick / re-authorize the data file */
+function chooseDataFile() {
+  if (!window.showSaveFilePicker) { showToast(T("data.noFS")); return; }
+  var proceed = (fileHandle
+    ? fileHandle.requestPermission({ mode: "readwrite" })
+    : Promise.resolve("granted"));
+  proceed.then(function (perm) {
+    if (perm !== "granted") { showToast(T("data.cancelled")); return; }
+    if (fileHandle) {
+      return readFileInto().then(function () {
+        writeFileMaybe();
+        updateDataFileStatus();
+        showToast(T("data.saved"));
+      });
+    }
+    return window.showSaveFilePicker({
+      suggestedName: "data.json",
+      types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+    }).then(function (h) {
+      fileHandle = h;
+      return idbPut("dataFile", h).then(function () {
+        writeFileMaybe();
+        updateDataFileStatus();
+        showToast(T("data.saved"));
+      });
+    }).catch(function () { showToast(T("data.cancelled")); });
+  }).catch(function () { showToast(T("data.pickFail")); });
+}
+
+/* ---------------- undo ---------------- */
+var UNDO_STACK = [];
+var lastEditTag = "", lastEditTime = 0;
+function pushHistory(tag) {
+  var now = Date.now();
+  if (tag && tag === lastEditTag && now - lastEditTime < 1500) { lastEditTime = now; return; }
+  UNDO_STACK.push(JSON.stringify(ROW));
+  if (UNDO_STACK.length > 60) UNDO_STACK.shift();
+  lastEditTag = tag || ""; lastEditTime = now;
+  updateUndoBtn();
+}
+function undoStep() {
+  if (!UNDO_STACK.length) { alert(T("msg.noUndo")); return; }
+  ROW = JSON.parse(UNDO_STACK.pop());
+  lastEditTag = "";
+  save();
+  renderAll();
+  logAction("undoStep", "", ROW.length);
+}
+function updateUndoBtn() {
+  var b = document.getElementById("btnUndo");
+  if (b) b.disabled = !UNDO_STACK.length;
+}
+
+/* ---------------- utils ---------------- */
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function clampComp(v) {
+  v = parseInt(v, 10);
+  if (isNaN(v)) return "";
+  return Math.max(0, Math.min(100, v));
+}
+function uid() { return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* Heal duplicate/missing record IDs (a duplicate ID makes clicks edit the wrong row) */
+function ensureUniqueIds() {
+  var seen = {}, dup = 0, missing = 0;
+  ROW.forEach(function (r) {
+    if (r.id === undefined || r.id === null || r.id === "") { r.id = uid(); missing++; return; }
+    var k = String(r.id);
+    if (seen[k]) { r.id = uid(); dup++; }
+    else seen[k] = 1;
+  });
+  return { dup: dup, missing: missing };
+}
+function todayStr() {
+  var d = new Date();
+  function p(n) { return (n < 10 ? "0" : "") + n; }
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function latestByProject(rows) {
+  rows = rows || ROW;
+  var order = rows.slice().sort(function (a, b) { return (a.date < b.date ? -1 : a.date > b.date ? 1 : 0); });
+  var map = {};
+  order.forEach(function (r) { if (r.project) map[r.project] = r; });
+  var arr = [];
+  for (var k in map) arr.push(map[k]);
+  return arr;
+}
+function weekStart(dateStr) {
+  var d = new Date(dateStr + "T00:00:00");
+  var day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  function p(n) { return (n < 10 ? "0" : "") + n; }
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function pct(n) { return Math.round(n) + "%"; }
+
+/* ---------------- toast ---------------- */
+var toastTimer = null;
+function showToast(msg, onClick) {
+  var t = document.getElementById("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }
+  t.textContent = msg;
+  if (onClick) {
+    t.classList.add("toast-clickable");
+    t.onclick = function () { try { onClick(); } catch (e) {} t.classList.remove("show"); t.classList.remove("toast-clickable"); t.onclick = null; };
+  } else {
+    t.classList.remove("toast-clickable");
+    t.onclick = null;
+  }
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove("show"); t.classList.remove("toast-clickable"); t.onclick = null; }, onClick ? 8000 : 2600);
+}
+
+/* ---------------- save log ---------------- */
+var LOG = [];
+var LOG_MAX = 200;
+function logChange(r, field, oldVal, newVal) {
+  if (String(oldVal) === String(newVal)) return;
+  LOG.unshift({
+    time: new Date().toLocaleTimeString(LANG === "en" ? "en-US" : "zh-CN", { hour12: false }),
+    project: r.project || T("log.unnamed"),
+    field: field, oldVal: oldVal, newVal: newVal,
+    rowId: String(r.id), sys: false
+  });
+  if (LOG.length > LOG_MAX) LOG.length = LOG_MAX;
+}
+function logAction(action, detail, count) {
+  LOG.unshift({
+    time: new Date().toLocaleTimeString(LANG === "en" ? "en-US" : "zh-CN", { hour12: false }),
+    project: detail || "", field: action,
+    oldVal: count != null ? T("log.hadRows", { n: count }) : "",
+    newVal: "", rowId: "", sys: true
+  });
+  if (LOG.length > LOG_MAX) LOG.length = LOG_MAX;
+}
+function clearLog() {
+  if (!LOG.length) return;
+  if (confirm(T("log.clearConfirm"))) { LOG = []; renderLog(); }
+}
+function openLog() {
+  var p = document.getElementById("logPanel");
+  if (!p) {
+    p = document.createElement("div");
+    p.id = "logPanel";
+    p.innerHTML =
+      '<div class="loghead">' +
+        '<div><strong></strong><div class="sub"></div></div>' +
+        '<div class="act"><button class="log-clear"></button><button class="log-close"></button></div>' +
+      '</div>' +
+      '<div class="loglist" id="logList"></div>';
+    document.body.appendChild(p);
+    p.querySelector(".log-clear").onclick = clearLog;
+    p.querySelector(".log-close").onclick = function () { p.classList.remove("show"); };
+    p.querySelector(".loghead strong").textContent = T("log.title");
+    p.querySelector(".loghead .sub").textContent = T("log.sub", { n: LOG_MAX });
+    p.querySelector(".log-clear").textContent = T("log.clear");
+    p.querySelector(".log-close").textContent = T("log.close");
+  }
+  renderLog();
+  p.classList.add("show");
+}
+function fmtLogVal(field, val) {
+  if (field === "pin") return (val === true || val === "true") ? T("log.pinOn") : T("log.pinOff");
+  if (field === "cross") return (val === true || val === "true") ? T("log.crossOn") : T("log.crossOff");
+  return String(val == null ? "" : val);
+}
+function renderLog() {
+  var list = document.getElementById("logList");
+  if (!list) return;
+  if (!LOG.length) {
+    list.innerHTML = '<div class="logempty">' + esc(T("log.empty")) + '</div>';
+    return;
+  }
+  list.innerHTML = LOG.map(function (e) {
+    var t = esc(e.time);
+    if (e.sys) {
+      var lbl = T("log.sysAction." + e.field) || e.field;
+      return '<div class="logitem">' +
+        '<div class="logtime">' + t + ' · <span class="logfield">' + esc(T("log.sys")) + '</span> · ' + esc(lbl) + (e.project ? ' · ' + esc(e.project) : '') + '</div>' +
+        (e.oldVal ? '<div class="logwhat">' + esc(e.oldVal) + '</div>' : '') +
+        '</div>';
+    }
+    var fl = T("log.field." + e.field) || e.field;
+    return '<div class="logitem">' +
+      '<div class="logtime">' + t + ' · ' + esc(e.project) + ' · <span class="logfield">' + esc(fl) + '</span></div>' +
+      '<div class="logwhat"><del>' + esc(fmtLogVal(e.field, e.oldVal)) + '</del> → <ins>' + esc(fmtLogVal(e.field, e.newVal)) + '</ins></div>' +
+      '</div>';
+  }).join("");
+}
+
+/* ---------------- rendering ---------------- */
+function renderCards() {
+  var filtered = visibleRows();
+  var latest = latestByProject(filtered);
+  var active = latest.filter(function (r) { return r.status === "in_progress" || r.status === "pending" || r.status === "paused"; });
+  var done = latest.filter(function (r) { return r.status === "completed" || r.status === "closed"; });
+  var avg = latest.length
+    ? latest.reduce(function (s, r) { return s + (+r.comp || 0); }, 0) / latest.length
+    : 0;
+  var f = filterState();
+  var filteredOn = !!(f.fy || f.fs || f.fp || f.kw);
+  document.getElementById("kTotal").textContent = filtered.length;
+  document.getElementById("kTotalExtra").textContent = filteredOn ? T("card.totalFiltered") : T("card.totalExtra");
+  document.getElementById("kProj").textContent = latest.length;
+  document.getElementById("kActive").textContent = active.length;
+  document.getElementById("kDone").textContent = done.length;
+  document.getElementById("kAvg").textContent = pct(avg);
+  document.getElementById("kAvgSub").textContent = T("msg.avgOf") + (latest.length ? T("card.avgCount", { n: latest.length }) : "");
+}
+function renderFilters() {
+  var ys = document.getElementById("fYear");
+  var curY = ys.value;
+  ys.innerHTML = '<option value="">' + esc(T("toolbar.all")) + '</option>' + YEARS.map(function (y) {
+    return '<option value="' + y + '">' + esc(VY(y)) + '</option>';
+  }).join("");
+  ys.value = curY;
+
+  var ss = document.getElementById("fStatus");
+  var curS = ss.value;
+  ss.innerHTML = '<option value="">' + esc(T("toolbar.all")) + '</option>' + STATUSES.map(function (s) {
+    return '<option value="' + s + '" style="color:' + (STATUS_COLOR[s] || "#333") + '">' + esc(VS(s)) + '</option>';
+  }).join("");
+  ss.value = curS;
+
+  var sel = document.getElementById("fProject");
+  var cur = sel.value;
+  var names = [];
+  ROW.forEach(function (r) { if (r.project && names.indexOf(r.project) < 0) names.push(r.project); });
+  names.sort();
+  sel.innerHTML = '<option value="">' + esc(T("toolbar.all")) + '</option>' + names.map(function (n) {
+    return '<option value="' + esc(n).replace(/"/g, "&quot;") + '">' + esc(n) + "</option>";
+  }).join("");
+  sel.value = cur;
+}
+function filterState() {
+  return {
+    fy: document.getElementById("fYear").value,
+    fs: document.getElementById("fStatus").value,
+    fp: document.getElementById("fProject").value,
+    kw: (document.getElementById("fKw").value || "").trim().toLowerCase()
+  };
+}
+function rowMatches(r, f) {
+  if (f.fy) {
+    var inYear = r.year === f.fy || (r.cross && r.year2 === f.fy);
+    if (!inYear) return false;
+  }
+  if (f.fs && r.status !== f.fs) return false;
+  if (f.fp && r.project !== f.fp) return false;
+  if (f.kw) {
+    var hay = (r.project + " " + r.owner + " " + VT(r.type) + " " + VS(r.status) + " " + (r.work || "") + " " + (r.note || "")).toLowerCase();
+    if (hay.indexOf(f.kw) < 0) return false;
+  }
+  return true;
+}
+function visibleRows() {
+  var f = filterState();
+  return sortRows(ROW.filter(function (r) { return rowMatches(r, f); }));
+}
+/* Sort: pinned first; then year (asc), completion (100 to 0), date (newest first) */
+function yearIndex(y) { var i = YEARS.indexOf(y); return i < 0 ? YEARS.length : i; }
+function sortRows(arr) {
+  return arr.slice().sort(function (a, b) {
+    var pa = a.pin ? 1 : 0, pb = b.pin ? 1 : 0;
+    if (pa !== pb) return pb - pa;
+    var ya = yearIndex(a.year), yb = yearIndex(b.year);
+    if (ya !== yb) return ya - yb;
+    var ca = (+a.comp || 0), cb = (+b.comp || 0);
+    if (ca !== cb) return cb - ca;
+    if ((a.date || "") !== (b.date || "")) return (a.date || "") < (b.date || "") ? 1 : -1;
+    return 0;
+  });
+}
+function renderTable() {
+  var tbody = document.getElementById("tbody");
+  var arr = visibleRows();
+  if (!arr.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-row">' + esc(T("misc.emptyRow")) + '</td></tr>';
+    return;
+  }
+  var yearOpts = function (v) {
+    return YEARS.map(function (s) {
+      return '<option value="' + s + '"' + (s === v ? " selected" : "") + ">" + esc(VY(s)) + "</option>";
+    }).join("");
+  };
+  var typeOpts = function (v) {
+    return TYPES.map(function (s) {
+      return '<option value="' + s + '"' + (s === v ? " selected" : "") + ">" + esc(VT(s)) + "</option>";
+    }).join("");
+  };
+  var statusOpts = function (v) {
+    return STATUSES.map(function (s) {
+      return '<option value="' + s + '"' + (s === v ? " selected" : "") +
+        ' style="color:' + (STATUS_COLOR[s] || "#333") + '">' + esc(VS(s)) + "</option>";
+    }).join("");
+  };
+  var planOpts = function (v) {
+    return PLANS.map(function (s) {
+      var label = (I18N[LANG].planShort[s]) || VP(s);
+      return '<option value="' + s + '"' + (s === v ? " selected" : "") + '>' + esc(label) + "</option>";
+    }).join("");
+  };
+  var html = "";
+  arr.forEach(function (r) {
+    var projVal = esc(r.project).replace(/"/g, "&quot;");
+    var compNum = clampComp(r.comp); if (compNum === "") compNum = 0;
+    var barColor = STATUS_COLOR[r.status] || "#2f6fb0";
+    html +=
+      '<tr data-id="' + r.id + '"' + (r.pin ? ' class="pinned-row"' : "") + '>' +
+      "<td class='c-year'><select onchange='up(this,\"year\")'>" + yearOpts(r.year) + "</select>" +
+        "<label class='crossline' title='" + esc(T("misc.crossTip")) + "'><input type='checkbox'" + (r.cross ? " checked" : "") + " onchange='up(this,\"cross\")'>" + esc(T("misc.cross")) + "</label>" +
+        (r.cross ? "<select class='y2' title='" + esc(T("misc.y2")) + "' onchange='up(this,\"year2\")'>" + yearOpts(r.year2) + "</select>" : "") +
+      "</td>" +
+      "<td class='c-date'><input type='date' value='" + esc(r.date) + "' onchange='up(this,\"date\")'></td>" +
+      "<td class='c-proj'><input type='text' list='projList' value='" + projVal + "' title='" + projVal + "' placeholder='" + esc(T("misc.projPh")) + "' oninput='up(this,\"project\")'></td>" +
+      "<td class='c-owner'><input type='text' list='ownerList' value='" + esc(r.owner).replace(/"/g, "&quot;") + "' placeholder='" + esc(T("misc.ownerPh")) + "' oninput='up(this,\"owner\")'></td>" +
+      "<td class='c-type'><select onchange='up(this,\"type\")'>" + typeOpts(r.type) + "</select></td>" +
+      "<td class='c-comp'><div class='compcell'>" +
+        "<button title='" + esc(T("misc.minus5")) + "' onclick='adjComp(this,\"-5\")'>-5</button>" +
+        "<input type='number' min='0' max='100' value='" + esc(r.comp) + "' onchange='up(this,\"comp\")' style='text-align:center'>" +
+        "<button title='" + esc(T("misc.plus5")) + "' onclick='adjComp(this,\"5\")'>+5</button>" +
+      "</div><div class='cbar'><i style='width:" + compNum + "%;background:" + barColor + "'></i></div></td>" +
+      "<td class='c-status'><select onchange='up(this,\"status\")' style='color:" + barColor + ";font-weight:600'>" + statusOpts(r.status) + "</select></td>" +
+      "<td class='c-plan'><select onchange='up(this,\"plan\")'>" + planOpts(r.plan) + "</select></td>" +
+      "<td class='c-work'><textarea rows='1' placeholder='" + esc(T("misc.workPh")) + "' oninput='up(this,\"work\")'>" + esc(r.work) + "</textarea></td>" +
+      "<td class='c-note'><textarea rows='1' placeholder='" + esc(T("misc.notePh")) + "' oninput='up(this,\"note\")'>" + esc(r.note) + "</textarea></td>" +
+      "<td class='c-op'><button class='pinbtn" + (r.pin ? " on" : "") + "' title='" + (r.pin ? esc(T("misc.unpinTip")) : esc(T("misc.pinTip"))) + "' onclick='togglePin(this)'>" + (r.pin ? esc(T("misc.unpin")) : esc(T("misc.pin"))) + "</button>" +
+        "<button class='delbtn' onclick='delRow(this)' title='" + esc(T("misc.del")) + "'>×</button></td>" +
+      "</tr>";
+  });
+  tbody.innerHTML = html + '<datalist id="projList">' + ROW.map(function (r) { return r.project ? '<option value="' + esc(r.project).replace(/"/g, "&quot;") + '"></option>' : ""; }).join("") + "</datalist>" +
+    '<datalist id="ownerList">' + ROW.map(function (r) { return r.owner ? '<option value="' + esc(r.owner).replace(/"/g, "&quot;") + '"></option>' : ""; }).join("") + "</datalist>";
+  var tas = tbody.querySelectorAll("textarea");
+  for (var t = 0; t < tas.length; t++) autoGrow(tas[t]);
+}
+function autoGrow(el) {
+  el.style.height = "auto";
+  el.style.height = Math.max(37, el.scrollHeight) + "px";
+}
+
+/* ---------------- cell edit ---------------- */
+var lastEditedId = null;
+function up(input, field) {
+  var tr = input.closest("tr");
+  var id = tr.getAttribute("data-id");
+  var r = ROW.find(function (x) { return String(x.id) === String(id); });
+  if (!r) return;
+  pushHistory(String(id) + ":" + field);
+  var oldVal = r[field];
+  var v = input.value;
+  if (field === "comp") v = clampComp(v);
+  if (field === "cross") {
+    v = input.checked;
+    if (v) {
+      if (!r.year2) {
+        var yi = yearIndex(r.year);
+        r.year2 = YEARS[Math.min(yi + 1, YEARS.length - 1)];
+        if (r.year2 === r.year) r.year2 = YEARS[Math.max(yi - 1, 0)];
+      }
+      var y2sel = tr.querySelector("select.y2");
+      if (y2sel) y2sel.value = r.year2;
+    }
+  }
+  r[field] = v;
+  if (field === "comp") input.value = v;
+  if (field === "date" && !r.date) input.classList.add("err"); else input.classList.remove("err");
+  if (input.tagName === "TEXTAREA") autoGrow(input);
+  if (field === "status" && v === "completed") {
+    var oldComp = r.comp;
+    r.comp = 100;
+    var compInput = tr.querySelector(".compcell input");
+    if (compInput) compInput.value = 100;
+    if (String(oldComp) !== "100") logChange(r, "comp", oldComp, 100);
+  }
+  logChange(r, field, oldVal, v);
+  if (field === "comp" || field === "status") {
+    var bar = tr.querySelector(".cbar i");
+    if (bar) {
+      var c = clampComp(r.comp); if (c === "") c = 0;
+      bar.style.width = c + "%";
+      bar.style.background = STATUS_COLOR[r.status] || "#2f6fb0";
+    }
+  }
+  if (field === "status") input.style.color = STATUS_COLOR[v] || "#222";
+  save();
+  renderCards();
+  renderCharts();
+  lastEditedId = String(id);
+  var flt = filterState();
+  if ((flt.fy || flt.fs || flt.fp || flt.kw) && !rowMatches(r, flt)) {
+    showToast(T("msg.filteredToast", { p: r.project || T("log.unnamed") }), function () {
+      document.getElementById("fYear").value = "";
+      document.getElementById("fStatus").value = "";
+      document.getElementById("fProject").value = "";
+      document.getElementById("fKw").value = "";
+      render();
+    });
+  }
+  if (field === "cross") {
+    renderTable();
+  } else if (field === "project" || field === "owner" || field === "work" || field === "note") {
+    if (resortTimer) { clearTimeout(resortTimer); resortTimer = null; }
+  } else {
+    scheduleResort();
+  }
+}
+
+/* delayed re-sort so rapid clicking is not interrupted */
+var resortTimer = null;
+function scheduleResort() {
+  if (resortTimer) clearTimeout(resortTimer);
+  resortTimer = setTimeout(function () {
+    resortTimer = null;
+    renderTable();
+    if (lastEditedId) {
+      var trF = document.querySelector('tr[data-id="' + lastEditedId + '"]');
+      if (trF) {
+        trF.classList.add("flash-row");
+        setTimeout(function () { trF.classList.remove("flash-row"); }, 1700);
+      }
+    }
+  }, 700);
+}
+function adjComp(btn, delta) {
+  var input = btn.parentNode.querySelector("input");
+  input.value = clampComp((+input.value || 0) + parseInt(delta, 10));
+  up(input, "comp");
+}
+function togglePin(btn) {
+  var tr = btn.closest("tr");
+  var id = tr.getAttribute("data-id");
+  var r = ROW.find(function (x) { return String(x.id) === String(id); });
+  if (!r) return;
+  pushHistory(String(id) + ":pin");
+  var oldVal = !!r.pin;
+  r.pin = !oldVal;
+  logChange(r, "pin", oldVal, r.pin);
+  lastEditedId = String(id);
+  btn.classList.toggle("on", r.pin);
+  btn.textContent = r.pin ? T("misc.unpin") : T("misc.pin");
+  btn.title = r.pin ? T("misc.unpinTip") : T("misc.pinTip");
+  save();
+  renderCards();
+  renderCharts();
+  showToast(r.pin ? T("msg.pinnedToast", { p: r.project || T("log.unnamed") }) : T("msg.unpinnedToast", { p: r.project || T("log.unnamed") }));
+  scheduleResort();
+}
+
+/* ---------------- row operations ---------------- */
+function addRow() {
+  var lastOwner = "";
+  if (ROW.length) {
+    var newest = ROW.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];
+    if (newest.owner) lastOwner = newest.owner;
+  }
+  pushHistory("addRow");
+  var year0 = YEARS[1] || YEARS[0];
+  var row = { id: uid(), year: year0, date: todayStr(), project: "", owner: lastOwner,
+              type: TYPES[0], comp: "", status: "in_progress", plan: "not_started",
+              work: "", note: "" };
+  ROW.push(row);
+  save();
+  renderAll();
+  logAction("addRow", row.project || "(" + T("log.unnamed") + ")", ROW.length - 1);
+  var td = document.querySelector('tr[data-id="' + row.id + '"] input[type="text"]');
+  if (td) td.focus();
+}
+function delRow(btn) {
+  var tr = btn.closest("tr");
+  var id = tr.getAttribute("data-id");
+  if (!confirm(T("msg.delConfirm"))) return;
+  pushHistory("delRow:" + id);
+  var target = ROW.find(function (x) { return String(x.id) === String(id); });
+  var projName = target ? (target.project || "(" + T("log.unnamed") + ")") : "";
+  ROW = ROW.filter(function (x) { return String(x.id) !== String(id); });
+  save();
+  renderAll();
+  logAction("delRow", projName);
+}
+function clearAll() {
+  if (!ROW.length) return;
+  if (!confirm(T("msg.clearConfirm"))) return;
+  var n = ROW.length;
+  pushHistory("clearAll");
+  ROW = [];
+  save();
+  renderAll();
+  logAction("clearAll", "", n);
+}
+function dedupeByProject(rows) {
+  var map = {}, order = [], removed = [];
+  rows.forEach(function (r) {
+    var k = String(r.project || "").trim();
+    if (!k) k = "Unnamed#" + String(r.id || Math.random());
+    if (!map[k]) { map[k] = r; order.push(k); return; }
+    var cur = map[k];
+    if (String(r.date || "") >= String(cur.date || "")) { removed.push(cur); map[k] = r; }
+    else { removed.push(r); }
+  });
+  var out = [];
+  order.forEach(function (k) { out.push(map[k]); });
+  return { rows: out, removed: removed };
+}
+function dedupeManual() {
+  if (!ROW.length) { alert(T("msg.dedupeEmpty")); return; }
+  var res = dedupeByProject(ROW);
+  if (!res.removed.length) { alert(T("msg.dedupeNone")); return; }
+  var names = res.removed.slice(0, 8).map(function (r) {
+    return "· " + (r.project || "(" + T("log.unnamed") + ")") + "（" + (r.date || "-") + "）";
+  }).join("\n");
+  if (res.removed.length > 8) names += "\n" + T("msg.dedupeMore", { n: res.removed.length });
+  if (!confirm(T("msg.dedupeConfirm", { n: res.removed.length, names: names }))) return;
+  pushHistory("dedupe");
+  ROW = res.rows;
+  save();
+  renderAll();
+  logAction("dedupe", "", res.removed.length);
+}
+
+/* ---------------- charts (pure SVG) ---------------- */
+function svgBox(w, h) { return "<svg viewBox='0 0 " + w + " " + h + "' role='img'>"; }
+
+function renderBars() {
+  var el = document.getElementById("cBars");
+  var latest = latestByProject(visibleRows()).slice().sort(function (a, b) { return (+b.comp || 0) - (+a.comp || 0); });
+  if (!latest.length) { el.innerHTML = '<div class="empty">' + esc(T("chart.noData")) + '</div>'; return; }
+  var W = 420, barH = 16, padT = 10, rowH = 44, FS = 12;
+  var maxLen = Math.max.apply(null, latest.map(function (r) { return String(r.project || "").length; }));
+  var labelW = Math.min(180, Math.max(96, maxLen * FS));
+  var maxChars = Math.max(4, Math.floor(labelW / FS));
+  var chartW = W - labelW - 56;
+  var H = padT + latest.length * rowH + 8;
+  var parts = "";
+  latest.forEach(function (r, i) {
+    var comp = clampComp(r.comp); if (comp === "") comp = 0;
+    var y = padT + i * rowH;
+    var cy = y + rowH / 2;
+    var barY = cy - barH / 2;
+    var bw = chartW * (comp / 100);
+    var name = String(r.project || "");
+    /* word-aware split: prefer breaking at a space within the limit so labels read naturally */
+    var lines;
+    if (name.length <= maxChars) {
+      lines = [name];
+    } else {
+      var l1 = name.slice(0, maxChars);
+      var sp = l1.lastIndexOf(" ");
+      if (sp > maxChars * 0.4 && sp < maxChars) l1 = l1.slice(0, sp);
+      var l2 = name.slice(l1.length).replace(/^\s+/, "");
+      if (l2.length > maxChars) l2 = l2.slice(0, maxChars - 1) + "…";
+      lines = [l1, l2];
+    }
+    var nameSvg;
+    if (lines.length === 1) {
+      nameSvg = "<text x='" + labelW + "' y='" + (cy + 4) + "' text-anchor='end' font-size='" + FS + "' fill='#333'>" + esc(lines[0]) + "</text>";
+    } else {
+      nameSvg = "<text text-anchor='end' font-size='" + FS + "' fill='#333'>" +
+        "<tspan x='" + labelW + "' y='" + (cy - 3) + "'>" + esc(lines[0]) + "</tspan>" +
+        "<tspan x='" + labelW + "' y='" + (cy + 11) + "'>" + esc(lines[1]) + "</tspan></text>";
+    }
+    parts += nameSvg +
+      "<rect x='" + labelW + "' y='" + barY + "' width='" + chartW + "' height='" + barH + "' rx='2' fill='#e6eaee'></rect>" +
+      "<rect x='" + labelW + "' y='" + barY + "' width='" + Math.max(bw, 0) + "' height='" + barH + "' rx='2' fill='" + (STATUS_COLOR[r.status] || "#2f6fb0") + "'><title>" + esc(r.project) + "：" + comp + "%（" + esc(VS(r.status)) + "）</title></rect>" +
+      "<text x='" + (labelW + Math.max(bw, 0) + 5) + "' y='" + (cy + 4) + "' font-size='11' font-weight='600' fill='#1c3d5a'>" + comp + "%</text>";
+  });
+  el.innerHTML = svgBox(W, H) + parts + "</svg>";
+}
+function renderDonut() {
+  var el = document.getElementById("cDonut");
+  var latest = latestByProject(visibleRows());
+  if (!latest.length) { el.innerHTML = '<div class="empty">' + esc(T("chart.noData")) + '</div>'; return; }
+  var counts = {};
+  latest.forEach(function (r) { var k = r.status || "other"; counts[k] = (counts[k] || 0) + 1; });
+  var keys = Object.keys(counts);
+  var colors = keys.map(function (k) { return STATUS_COLOR[k] || "#2f6fb0"; });
+  var total = latest.length;
+  var R = 52, C = 2 * Math.PI * R;
+  var cx = 70, cy = 70;
+  var offset = 0;
+  var parts = "";
+  keys.forEach(function (k, i) {
+    var frac = counts[k] / total;
+    var dash = frac * C;
+    parts += "<circle r='" + R + "' cx='" + cx + "' cy='" + cy + "' fill='none' stroke='" + colors[i] + "' stroke-width='22' stroke-dasharray='" + dash + " " + (C - dash) + "' stroke-dashoffset='" + (-offset) + "' transform='rotate(-90 " + cx + " " + cy + ")'><title>" + esc(VS(k) || k) + "：" + counts[k] + "</title></circle>";
+    offset += dash;
+  });
+  parts += "<text x='" + cx + "' y='" + (cy - 4) + "' text-anchor='middle' font-size='20' font-weight='700' fill='#1c3d5a'>" + total + "</text>" +
+    "<text x='" + cx + "' y='" + (cy + 14) + "' text-anchor='middle' font-size='10' fill='#8a949e'>" + esc(T("card.projects")) + "</text>";
+  var legend = "";
+  keys.forEach(function (k, i) {
+    var ly = 18 + i * 20;
+    legend += "<rect x='156' y='" + (ly - 8) + "' width='10' height='10' rx='2' fill='" + colors[i] + "'></rect>" +
+      "<text x='172' y='" + ly + "' font-size='12' fill='#333'>" + esc(VS(k) || k) + " · " + counts[k] + "</text>";
+  });
+  el.innerHTML = svgBox(300, Math.max(140, 18 + keys.length * 20)) + parts + legend + "</svg>";
+}
+function renderLine() {
+  var el = document.getElementById("cLine");
+  var rows = visibleRows().slice().sort(function (a, b) { return (a.date < b.date ? -1 : a.date > b.date ? 1 : 0); });
+  var pts = [], seen = {}, ti = -1;
+  rows.forEach(function (r) {
+    if (!r.date || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+    var wk = weekStart(r.date);
+    if (seen[wk]) return;
+    seen[wk] = 1;
+    pts.push({ wk: wk, until: r.date });
+  });
+  if (pts.length < 1) { el.innerHTML = '<div class="empty">' + esc(T("chart.noData")) + '</div>'; return; }
+  var W = 380, H = 160, padL = 34, padR = 14, padT = 28, padB = 26;
+  var vals = pts.map(function (p, idx) {
+    var sub = rows.filter(function (r) { return r.date && r.date <= p.until && rows.indexOf(r) <= rows.lastIndexOf(r); });
+    var latestSoFar = latestByProject(sub);
+    if (!latestSoFar.length) return 0;
+    return latestSoFar.reduce(function (s, r) { return s + (+r.comp || 0); }, 0) / latestSoFar.length;
+  });
+  var iw = W - padL - padR, ih = H - padT - padB;
+  var n = pts.length;
+  var step = n > 1 ? iw / (n - 1) : 0;
+  var x0 = n > 1 ? padL : padL + iw / 2;
+  var parts = "";
+  for (var g = 0; g <= 4; g++) {
+    var gy = padT + ih - (ih * g / 4);
+    parts += "<line x1='" + padL + "' y1='" + gy + "' x2='" + (W - padR) + "' y2='" + gy + "' stroke='#e6eaee' stroke-width='1'></line>" +
+      "<text x='" + (padL - 6) + "' y='" + (gy + 4) + "' text-anchor='end' font-size='10' fill='#8a949e'>" + (g * 25) + "%</text>";
+  }
+  var path = "";
+  pts.forEach(function (p, i) {
+    var x = x0 + i * step;
+    var y = padT + ih - (ih * (vals[i] || 0) / 100);
+    path += (i === 0 ? "M" : "L") + x + " " + y;
+    parts += "<circle cx='" + x + "' cy='" + y + "' r='3.2' fill='#2f6fb0'><title>" + esc(p.wk) + "：" + pct(vals[i] || 0) + "</title></circle>";
+    if (i === 0 || i === pts.length - 1 || n <= 8 || i % Math.ceil(n / 8) === 0) {
+      parts += "<text x='" + x + "' y='" + (y - 8) + "' text-anchor='middle' font-size='10' fill='#1c3d5a'>" + pct(vals[i] || 0) + "</text>";
+      parts += "<text x='" + x + "' y='" + (H - 8) + "' text-anchor='middle' font-size='9' fill='#8a949e'>" + esc(p.wk.slice(5)) + "</text>";
+    }
+  });
+  parts += "<path d='" + path + "' fill='none' stroke='#2f6fb0' stroke-width='2'></path>";
+  el.innerHTML = svgBox(W, H) + parts + "</svg>";
+}
+function renderCharts() { renderBars(); renderDonut(); renderLine(); }
+function render() { renderCards(); renderTable(); renderCharts(); }
+function renderAll() { renderFilters(); renderCards(); renderTable(); renderCharts(); updateUndoBtn(); updateDataFileStatus(); }
+
+/* ---------------- export (SpreadsheetML .xls) ---------------- */
+function yearText(r) {
+  return r.cross && r.year2 ? VY(r.year) + "+" + VY(r.year2) : VY(r.year);
+}
+function exportExcel() {
+  function xesc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  var headers = [T("col.year"), T("col.date"), T("col.project"), T("col.owner"), T("col.type"),
+    T("col.comp") + "(%)", T("col.status"), T("col.plan"), T("col.work"), T("col.note")];
+  var xml = '<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n' +
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
+    '<Styles><Style ss:ID="head"><Font ss:Bold="1"/></Style></Styles>\n' +
+    '<Worksheet ss:Name="ProgressBoard"><Table>\n<Row>' +
+    headers.map(function (h) { return '<Cell ss:StyleID="head"><Data ss:Type="String">' + xesc(h) + '</Data></Cell>'; }).join("") +
+    '</Row>\n';
+  visibleRows().forEach(function (r) {
+    var cells = [yearText(r), r.date || "", r.project || "", r.owner || "", VT(r.type),
+      (r.comp === "" || r.comp === undefined) ? "" : clampComp(r.comp), VS(r.status), VP(r.plan), r.work || "", r.note || ""];
+    xml += "<Row>" + cells.map(function (c) {
+      var isNum = typeof c === "number" || (typeof c === "string" && c !== "" && !isNaN(+c) && /^-?\d+(\.\d+)?$/.test(c));
+      return '<Cell><Data ss:Type="' + (isNum ? "Number" : "String") + '">' + xesc(c) + '</Data></Cell>';
+    }).join("") + "</Row>\n";
+  });
+  xml += "</Table></Worksheet>\n</Workbook>";
+  var blob = new Blob(["\ufeff" + xml], { type: "application/vnd.ms-excel" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ProgressBoard.xls";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ---------------- import (CSV / TSV / TXT / XLS / XLSX) ---------------- */
+var HEADER_ALIASES = {
+  year: ["学年", "年份", "year", "schoolyear"],
+  date: ["日期", "date"],
+  project: ["项目名称", "项目名", "项目", "project", "projectname", "name"],
+  owner: ["负责人", "owner", "assignee"],
+  type: ["项目类型", "类型", "type", "category"],
+  comp: ["完成度(%)", "完成度", "进度(%)", "进度", "completion(%)", "completion", "progress(%)", "progress", "percent"],
+  status: ["状态", "status"],
+  plan: ["计划书", "plan"],
+  work: ["本周进展(完成内容)", "本周进展", "进展", "完成内容", "work", "progressnotes", "notes"],
+  note: ["备注/风险/下周计划", "备注/风险", "备注", "note", "notes", "remarks", "comment"]
+};
+function normHeader(h) {
+  var s = String(h || "").trim().toLowerCase().replace(/\s+/g, "").replace(/\(\)/g, "").replace(/（%）/, "(%)");
+  for (var k in HEADER_ALIASES) {
+    for (var i = 0; i < HEADER_ALIASES[k].length; i++) {
+      var a = HEADER_ALIASES[k][i].toLowerCase().replace(/\s+/g, "");
+      if (s === a) return k;
+    }
+  }
+  return null;
+}
+var YEAR_ALIAS = {
+  "大一": "year1", "大二": "year2", "大三": "year3", "大四": "year4", "其他": "other",
+  "year1": "year1", "year2": "year2", "year3": "year3", "year4": "year4", "other": "other",
+  "freshman": "year1", "sophomore": "year2", "junior": "year3", "senior": "year4"
+};
+function normYear(s) {
+  var k = String(s || "").trim().toLowerCase().replace(/\s+/g, "");
+  if (YEAR_ALIAS[k]) return YEAR_ALIAS[k];
+  for (var a in YEAR_ALIAS) { if (k === a.toLowerCase()) return YEAR_ALIAS[a]; }
+  var zh = I18N.zh.year, en = I18N.en.year;
+  for (var yk in zh) { if (k === zh[yk]) return yk; }
+  for (var yk2 in en) { if (k === en[yk2].toLowerCase()) return yk2; }
+  return "";
+}
+function normStatus(s) {
+  var k = String(s || "").trim().toLowerCase();
+  if (!k) return "in_progress";
+  for (var i = 0; i < STATUSES.length; i++) {
+    var st = STATUSES[i];
+    if (st === k) return st;
+    var z = I18N.zh.status[st].toLowerCase(), e = I18N.en.status[st].toLowerCase();
+    if (k === z || k === e) return st;
+    if (z && (k.indexOf(z) >= 0 || z.indexOf(k) >= 0)) return st;
+    if (e && (k.indexOf(e) >= 0 || e.indexOf(k) >= 0)) return st;
+  }
+  return "in_progress";
+}
+function normType(s) {
+  var k = String(s || "").trim().toLowerCase();
+  for (var i = 0; i < TYPES.length; i++) {
+    if (TYPES[i] === k) return TYPES[i];
+    if (I18N.zh.type[TYPES[i]] === s || I18N.en.type[TYPES[i]].toLowerCase() === k) return TYPES[i];
+  }
+  return "other";
+}
+function normPlan(s) {
+  var k = String(s || "").trim().toLowerCase();
+  for (var i = 0; i < PLANS.length; i++) {
+    if (PLANS[i] === k) return PLANS[i];
+    if (I18N.zh.plan[PLANS[i]] === s || I18N.en.plan[PLANS[i]].toLowerCase() === k) return PLANS[i];
+  }
+  return s ? "done" : "not_needed";
+}
+function normDate(s) {
+  var t = String(s || "").trim();
+  var m = t.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (m) return m[1] + "-" + (m[2].length < 2 ? "0" + m[2] : m[2]) + "-" + (m[3].length < 2 ? "0" + m[3] : m[3]);
+  var sn = parseInt(t, 10);
+  if (!isNaN(sn) && sn > 20000 && sn < 80000) {
+    var d = new Date(1899, 11, 30);
+    d.setDate(d.getDate() + sn);
+    function p(x) { return (x < 10 ? "0" : "") + x; }
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  return t;
+}
+function matrixToRecords(matrix) {
+  var headerIdx = -1, map = null;
+  for (var i = 0; i < Math.min(matrix.length, 10); i++) {
+    var hit = 0, m = {};
+    for (var j = 0; j < matrix[i].length; j++) {
+      var key = normHeader(matrix[i][j]);
+      if (key && !m[key]) { m[key] = j; hit++; }
+    }
+    if (hit >= 2) { headerIdx = i; map = m; break; }
+  }
+  if (headerIdx < 0 || !map.project && !map.date) {
+    ["project", "date", "owner", "type", "comp", "status", "plan", "work", "note"].forEach(function (k, idx) { map[k] = idx; });
+  }
+  var out = [];
+  matrix.forEach(function (cells, ri) {
+    if (ri <= headerIdx) return;
+    function get(k) { return map[k] === undefined ? "" : String(cells[map[k]] == null ? "" : cells[map[k]]).trim(); }
+    var compV = parseFloat(get("comp"));
+    var yearParts = String(get("year")).split(/[+＋、,，;；和与]|同时|\band\b/i).map(function (s) { return s.trim(); }).filter(function (s) { return s !== ""; });
+    var rec = {
+      id: uid(),
+      year: normYear(yearParts[0] || ""),
+      date: normDate(get("date")),
+      project: get("project"),
+      owner: get("owner"),
+      type: normType(get("type")),
+      comp: isNaN(compV) ? "" : Math.max(0, Math.min(100, Math.round(compV))),
+      status: normStatus(get("status")),
+      plan: normPlan(get("plan")),
+      work: get("work"),
+      note: get("note"),
+      cross: yearParts.length > 1,
+      year2: yearParts.length > 1 ? normYear(yearParts[1]) : ""
+    };
+    if (!rec.year) rec.year = "other";
+    if (rec.project || rec.date) out.push(rec);
+  });
+  return out;
+}
+function decodeText(buf) {
+  var b = new Uint8Array(buf);
+  if (b.length >= 3 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) {
+    return new TextDecoder("utf-8").decode(b.subarray(3));
+  }
+  if (b.length >= 2 && b[0] === 0xFF && b[1] === 0xFE) {
+    return new TextDecoder("utf-16le").decode(b.subarray(2));
+  }
+  var utf8 = new TextDecoder("utf-8", { fatal: true }).decode(b);
+  return utf8;
+}
+function parseDelimited(text) {
+  var sep = ",", counts = { ",": 0, "\t": 0, ";": 0 };
+  for (var s in counts) {
+    for (var i = 0; i < text.length; i++) if (text[i] === s) counts[s]++;
+  }
+  sep = counts["\t"] > counts[","] ? "\t" : (counts[";"] > counts[","] ? ";" : ",");
+  var rows = [], cur = [], field = "", q = false;
+  for (var k = 0; k < text.length; k++) {
+    var ch = text[k];
+    if (q) {
+      if (ch === '"') {
+        if (text[k + 1] === '"') { field += '"'; k++; }
+        else q = false;
+      } else field += ch;
+    } else {
+      if (ch === '"') q = true;
+      else if (ch === sep) { cur.push(field); field = ""; }
+      else if (ch === "\n") { cur.push(field); field = ""; rows.push(cur); cur = []; }
+      else if (ch === "\r") {}
+      else field += ch;
+    }
+  }
+  if (field !== "" || cur.length) { cur.push(field); rows.push(cur); }
+  return rows;
+}
+function parseXmlXls(text) {
+  var doc = new DOMParser().parseFromString(text, "application/xml");
+  var rows = [];
+  var rowEls = doc.getElementsByTagName("Row");
+  for (var i = 0; i < rowEls.length; i++) {
+    var cells = [];
+    var cellEls = rowEls[i].getElementsByTagName("Cell");
+    var col = 0;
+    for (var j = 0; j < cellEls.length; j++) {
+      var idxAttr = cellEls[j].getAttribute("ss:Index");
+      if (idxAttr) { while (col < +idxAttr - 1) { cells.push(""); col++; } }
+      var data = cellEls[j].getElementsByTagName("Data")[0];
+      cells.push(data ? data.textContent : "");
+      col++;
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+function parseHtmlTable(text) {
+  var doc = new DOMParser().parseFromString(text, "text/html");
+  var rows = [];
+  var trs = doc.querySelectorAll("table tr");
+  for (var i = 0; i < trs.length; i++) {
+    var cells = [];
+    var tds = trs[i].querySelectorAll("td,th");
+    for (var j = 0; j < tds.length; j++) cells.push(tds[j].textContent.trim());
+    rows.push(cells);
+  }
+  return rows;
+}
+async function parseXlsx(buf) {
+  var u8 = new Uint8Array(buf);
+  var eocd = -1;
+  for (var i = u8.length - 22; i >= 0 && i > u8.length - 65558; i--) {
+    if (u8[i] === 0x50 && u8[i + 1] === 0x4B && u8[i + 2] === 0x05 && u8[i + 3] === 0x06) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("not a valid xlsx");
+  var cdCount = u8[eocd + 10] | (u8[eocd + 11] << 8);
+  var cdOff = u8[eocd + 16] | (u8[eocd + 17] << 8) | (u8[eocd + 18] << 16) | (u8[eocd + 19] << 24);
+  var shared = [];
+  var sheetData = null;
+  var p = cdOff;
+  for (var c = 0; c < cdCount; c++) {
+    if (!(u8[p] === 0x50 && u8[p + 1] === 0x4B && u8[p + 2] === 0x01 && u8[p + 3] === 0x02)) break;
+    var method = u8[p + 10] | (u8[p + 11] << 8);
+    var csize = u8[p + 20] | (u8[p + 21] << 8) | (u8[p + 22] << 16) | (u8[p + 23] << 24);
+    var nlen = u8[p + 28] | (u8[p + 29] << 8);
+    var elen = u8[p + 30] | (u8[p + 31] << 8);
+    var clen = u8[p + 32] | (u8[p + 33] << 8) | (u8[p + 34] << 16) | (u8[p + 35] << 24);
+    var lho = u8[p + 42] | (u8[p + 43] << 8);
+    var name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    var dataStart = p + 46 + nlen + elen;
+    var raw = u8.subarray(dataStart, dataStart + csize);
+    if (name === "xl/sharedStrings.xml") {
+      var txt = await inflate(raw, method);
+      shared = parseSharedStrings(txt);
+    } else if (name === "xl/worksheets/sheet1.xml") {
+      sheetData = await inflate(raw, method);
+    }
+    p = dataStart + clen;
+  }
+  if (sheetData === null) throw new Error("no sheet found");
+  return parseSheetXml(sheetData, shared);
+}
+async function inflate(raw, method) {
+  if (method === 0) return new TextDecoder().decode(raw);
+  var ds = new DecompressionStream("deflate-raw");
+  var stream = new Blob([raw]).stream().pipeThrough(ds);
+  var buf = await new Response(stream).arrayBuffer();
+  return new TextDecoder().decode(buf);
+}
+function parseSharedStrings(xml) {
+  var doc = new DOMParser().parseFromString(xml, "application/xml");
+  var out = [];
+  var sis = doc.getElementsByTagName("si");
+  for (var i = 0; i < sis.length; i++) {
+    var ts = sis[i].getElementsByTagName("t");
+    var s = "";
+    for (var j = 0; j < ts.length; j++) s += ts[j].textContent;
+    out.push(s);
+  }
+  return out;
+}
+function parseSheetXml(xml, shared) {
+  var doc = new DOMParser().parseFromString(xml, "application/xml");
+  var rows = [];
+  var rowEls = doc.getElementsByTagName("row");
+  for (var i = 0; i < rowEls.length; i++) {
+    var cells = [];
+    var cEls = rowEls[i].getElementsByTagName("c");
+    var col = 0;
+    for (var j = 0; j < cEls.length; j++) {
+      var ref = cEls[j].getAttribute("r") || "";
+      var refCol = 0;
+      for (var m = 0; m < ref.length; m++) {
+        if (ref[m] >= "A" && ref[m] <= "Z") refCol = refCol * 26 + (ref.charCodeAt(m) - 64);
+        else break;
+      }
+      if (refCol) { while (col < refCol - 1) { cells.push(""); col++; } }
+      var t = cEls[j].getAttribute("t");
+      var vEl = cEls[j].getElementsByTagName("v")[0];
+      var isEl = cEls[j].getElementsByTagName("is")[0];
+      var val = "";
+      if (t === "s" && vEl) val = shared[+vEl.textContent] || "";
+      else if (t === "inlineStr" && isEl) {
+        var ts = isEl.getElementsByTagName("t");
+        for (var q = 0; q < ts.length; q++) val += ts[q].textContent;
+      }
+      else if (vEl) val = vEl.textContent;
+      cells.push(val);
+      col++;
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+function importTable(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  var name = (f.name || "").toLowerCase();
+  var finish = function (matrix) {
+    try {
+      var recs = matrixToRecords(matrix);
+      if (!recs.length) { alert(T("msg.importNone")); return; }
+      var replace = confirm(T("msg.importAsk", { n: recs.length }));
+      pushHistory(replace ? "importReplace" : "importAppend");
+      ROW = replace ? recs : ROW.concat(recs);
+      ensureUniqueIds();
+      save();
+      renderAll();
+      logAction(replace ? "importReplace" : "importAppend", (f.name || ""), recs.length);
+    } catch (err) { alert(T("msg.importFail", { err: err.message })); }
+  };
+  if (/\.xlsx$/.test(name)) {
+    var r2 = new FileReader();
+    r2.onload = function () { parseXlsx(r2.result).then(finish).catch(function (err) { alert(T("msg.importFail", { err: err.message })); }); };
+    r2.readAsArrayBuffer(f);
+  } else {
+    var r1 = new FileReader();
+    r1.onload = function () {
+      var text = decodeText(r1.result);
+      if (/\.xls$/.test(name) && /<table/i.test(text)) finish(parseHtmlTable(text));
+      else if (/\.xls$/.test(name) && /<\?xml|<Workbook/i.test(text)) finish(parseXmlXls(text));
+      else finish(parseDelimited(text));
+    };
+    r1.readAsArrayBuffer(f);
+  }
+  ev.target.value = "";
+}
+
+/* ---------------- startup ---------------- */
+loadStore();
+(function () {
+  var heal = ensureUniqueIds();
+  if (heal.dup || heal.missing) {
+    saveMirror();
+    showToast(T("msg.healedToast", { n: heal.dup + heal.missing }));
+  }
+})();
+applyI18n();
+renderAll();
+initDataFile();
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+/* ============================================================
+   ProgressBoard - stylesheet
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+  background: #f4f6f8; color: #222; font-size: 14px; line-height: 1.5;
+}
+.page { max-width: 1560px; margin: 0 auto; padding: 18px 20px; }
+
+/* ---------- top bar ---------- */
+header.top {
+  background: #fff; border: 1px solid #dde2e7; border-radius: 8px;
+  padding: 12px 18px; display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+}
+header.top h1 { font-size: 20px; font-weight: 700; color: #1c3d5a; }
+header.top .sub { font-size: 12px; color: #6b7683; margin-top: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button, .btn {
+  border: 1px solid #c3ccd5; background: #fff; color: #333;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  font-family: inherit; white-space: nowrap;
+}
+button:hover { background: #eef2f6; }
+button.primary { background: #2f6fb0; border-color: #2f6fb0; color: #fff; }
+button.primary:hover { background: #275f96; }
+button.danger { color: #b02a2a; border-color: #d9a3a3; }
+button.danger:hover { background: #fbeaea; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------- summary cards ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #dde2e7; border-radius: 8px; padding: 12px 16px; }
+.card .lab { font-size: 12px; color: #6b7683; margin-bottom: 4px; }
+.card .num { font-size: 26px; font-weight: 700; color: #1c3d5a; }
+.card .sub { font-size: 11px; color: #8a949e; margin-top: 4px; }
+
+/* ---------- charts ---------- */
+.panel { background: #fff; border: 1px solid #dde2e7; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.panel h3 { font-size: 14px; color: #1c3d5a; margin-bottom: 8px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.chartbox { min-height: 120px; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.chartbox .empty { color: #8a949e; font-size: 13px; text-align: center; padding: 30px 0; }
+
+/* ---------- filter toolbar ---------- */
+.toolbar {
+  background: #fff; border: 1px solid #dde2e7; border-radius: 8px;
+  padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center;
+  gap: 10px; margin-bottom: 12px; font-size: 13px;
+}
+.toolbar label { color: #6b7683; }
+.toolbar select, .toolbar input[type="search"] {
+  padding: 5px 8px; border: 1px solid #c3ccd5; border-radius: 6px;
+  font-size: 13px; font-family: inherit; background: #fff; color: #222;
+}
+.toolbar .grow { flex: 1; }
+.toolbar .hint { font-size: 11px; color: #8a949e; }
+@media (max-width: 900px) { .toolbar .hint { display: none; } }
+
+/* ---------- table ---------- */
+.tablewrap { background: #fff; border: 1px solid #dde2e7; border-radius: 8px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 1454px; table-layout: fixed; }
+th, td { padding: 7px 8px; border-bottom: 1px solid #e6eaee; text-align: left; vertical-align: top; }
+th { background: #f0f4f8; color: #1c3d5a; font-size: 12.5px; font-weight: 600; }
+tbody tr:nth-child(even) td { background: #fafcfe; }
+tbody tr:hover td { background: #f2f7fc; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* In-table controls: slightly smaller fonts + tighter padding so content fits inside narrow columns.
+   Status/Type/Plan/Completion dropdowns and the completion number input need every pixel. */
+td input, td select, td textarea, td button {
+  font-size: 13px; font-family: inherit; border: 1px solid #c3ccd5;
+  border-radius: 6px; padding: 5px 6px; background: #fff; color: #222; width: 100%;
+}
+td input[type="checkbox"] { width: auto; }
+td input:focus, td select:focus, td textarea:focus { outline: none; border-color: #2f6fb0; }
+td select, td input[type="date"], td input[type="number"] { font-size: 12.5px; }
+.c-year select { width: 100%; margin-bottom: 2px; }
+.c-year .crossline { font-size: 11px; color: #6b7683; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.c-year select.y2 { margin-top: 2px; font-size: 12px; }
+.c-comp .compcell { display: flex; align-items: center; gap: 3px; }
+.c-comp .compcell input { text-align: center; min-width: 42px; }
+.c-comp .compcell button { width: 28px; flex: none; padding: 5px 0; font-size: 12.5px; }
+.c-comp .cbar { height: 5px; background: #e6eaee; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+.c-comp .cbar i { display: block; height: 100%; border-radius: 3px; transition: width .2s; }
+.c-op { text-align: center; white-space: nowrap; }
+.c-op .pinbtn, .c-op .delbtn { width: auto; }
+textarea { resize: vertical; min-height: 37px; line-height: 1.45; overflow: hidden; }
+input.err { border-color: #d9534f !important; background: #fdf0ef !important; }
+.empty-row { text-align: center; color: #8a949e; padding: 30px 0 !important; }
+
+/* highlight the recently edited row after re-sort */
+@keyframes rowflash { 0% { background: #fdeec9; } 100% { background: transparent; } }
+tbody tr.flash-row td { animation: rowflash 1.6s ease-out 1; }
+
+/* pinned rows */
+.delbtn { color: #b02a2a; border-color: transparent; background: transparent; font-size: 13px; padding: 4px 6px; }
+.delbtn:hover { background: #fbeaea; }
+.pinbtn { color: #2f6fb0; border-color: transparent; background: transparent; font-size: 12px; padding: 4px 5px; }
+.pinbtn:hover { background: #e8f1fa; }
+.pinbtn.on { background: #d98a2b; border-color: #d98a2b; color: #fff; font-weight: 600; }
+.pinbtn.on:hover { background: #c67a20; }
+tbody tr.pinned-row td { background: #fdf6e0; }
+tbody tr.pinned-row:hover td { background: #f9eecb; }
+
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
+  background: #1c3d5a; color: #fff; padding: 9px 18px; border-radius: 6px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 99;
+  max-width: 86vw; box-shadow: 0 4px 14px rgba(0,0,0,.22);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+#toast.toast-clickable { cursor: pointer; background: #2e8b57; }
+#toast.toast-clickable:hover { background: #246e45; }
+
+/* ---------- save log panel ---------- */
+#logPanel {
+  position: fixed; right: 16px; top: 16px; width: 480px; max-height: 78vh;
+  background: #fff; border: 1px solid #dde2e7; border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.18); display: none; flex-direction: column; z-index: 50;
+}
+#logPanel.show { display: flex; }
+#logPanel .loghead {
+  padding: 10px 14px; border-bottom: 1px solid #e6eaee;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+#logPanel .loghead strong { font-size: 14px; color: #1c3d5a; }
+#logPanel .loghead .sub { font-size: 11px; color: #8a949e; font-weight: normal; }
+#logPanel .loghead .act { display: flex; gap: 6px; }
+#logPanel .loghead button { padding: 4px 10px; font-size: 12px; }
+#logPanel .loglist { flex: 1; overflow-y: auto; padding: 4px 14px 12px; font-size: 13px; }
+#logPanel .logitem { padding: 8px 0; border-bottom: 1px dashed #e6eaee; }
+#logPanel .logitem:last-child { border-bottom: none; }
+#logPanel .logtime { color: #8a949e; font-size: 11px; margin-bottom: 2px; }
+#logPanel .logwhat { color: #333; word-break: break-all; }
+#logPanel .logwhat del { color: #b02a2a; background: #fbeaea; padding: 0 4px; border-radius: 3px; margin-right: 4px; }
+#logPanel .logwhat ins { color: #2e8b57; background: #e8f5ed; padding: 0 4px; border-radius: 3px; text-decoration: none; font-weight: 600; margin-left: 4px; }
+#logPanel .logempty { text-align: center; color: #8a949e; padding: 30px 0; font-size: 13px; }
+#logPanel .logfield { color: #2f6fb0; font-weight: 600; }
+
+/* ---------- data file status ---------- */
+.datafile-status { font-size: 11px; color: #8a949e; }
+
+/* ---------- footer ---------- */
+footer { text-align: center; color: #8a949e; font-size: 12px; margin: 14px 0 6px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 720px) {
+  .charts { grid-template-columns: 1fr; }
+  .page { padding: 10px; }
+}
